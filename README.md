@@ -1,3 +1,3 @@
-# Collector-YouTube-Summary
+# Agent-YouTube-Summary
 
 Part of the ArtimesOne platform.
