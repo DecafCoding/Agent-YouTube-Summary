@@ -31,6 +31,18 @@ Agent-YouTube-Summary/
 └── tests/                             # 50 tests across 7 files
 ```
 
+## Dependencies
+
+This agent depends on [utils-youtube](https://github.com/DecafCoding/Utils-YouTube), a shared async library that handles all YouTube Data API and Apify interactions. Stage 1 imports directly from it for video discovery, metadata retrieval, and transcript extraction — keeping that infrastructure in one place so multiple agents (this one and [agent-youtube-research](https://github.com/DecafCoding/Agent-YouTube-Research)) share the same code.
+
+`utils-youtube` is declared as a path dependency in `pyproject.toml` and expects both repos to live side-by-side in the same workspace:
+
+```
+AI Agents/
+├── Agent-YouTube-Summary/
+└── Utils-YouTube/
+```
+
 ## Setup
 
 ```bash
