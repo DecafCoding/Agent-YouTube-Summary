@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Rollups — YouTube Summary{% endblock %}
+
+{% block content %}
+<h1>Daily Rollups</h1>
+
+{% if rollups %}
+<table class="table">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>File</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for rollup in rollups %}
+    <tr>
+      <td><a href="/rollups/{{ rollup.date }}">{{ rollup.date }}</a></td>
+      <td>{{ rollup.filename }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+  <p>No rollups yet.</p>
+  <p class="text-muted">Run the pipeline to generate your first daily summary.</p>
+</div>
+{% endif %}
+{% endblock %}

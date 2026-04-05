@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — YouTube Summary{% endblock %}
+
+{% block content %}
+<h1>Settings</h1>
+
+<form id="settings-form" class="card">
+  <div id="form-fields"></div>
+
+  <button type="submit" class="btn btn-primary mt-md">Save Settings</button>
+  <div id="status-message" class="status-message"></div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const schema = {{ schema | tojson }};
+  const values = {{ values | tojson }};
+  const formFields = document.getElementById("form-fields");
+
+  function renderField(key, prop, value) {
+    const group = document.createElement("div");
+    group.className = "form-group";
+
+    const label = document.createElement("label");
+    label.className = "form-label";
+    label.textContent = prop.title || key;
+    label.setAttribute("for", "field-" + key);
+    group.appendChild(label);
+
+    if (prop.description) {
+      const desc = document.createElement("div");
+      desc.className = "form-description";
+      desc.textContent = prop.description;
+      group.appendChild(desc);
+    }
+
+    if (prop.type === "array" && prop.items && prop.items.type === "object") {
+      renderArrayGroup(group, key, prop, value || []);
+    } else if (prop.type === "boolean") {
+      const checkLabel = document.createElement("label");
+      checkLabel.className = "form-checkbox-label";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.id = "field-" + key;
+      input.name = key;
+      input.checked = !!value;
+      checkLabel.appendChild(input);
+      checkLabel.appendChild(document.createTextNode(" " + (prop.title || key)));
+      group.appendChild(checkLabel);
+    } else if (prop.enum) {
+      const select = document.createElement("select");
+      select.className = "form-select";
+      select.id = "field-" + key;
+      select.name = key;
+      prop.enum.forEach(function(opt) {
+        const option = document.createElement("option");
+        option.value = opt;
+        option.textContent = opt;
+        if (opt === value) option.selected = true;
+        select.appendChild(option);
+      });
+      group.appendChild(select);
+    } else if (prop.type === "integer") {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.className = "form-input";
+      input.id = "field-" + key;
+      input.name = key;
+      input.value = value !== undefined ? value : (prop.default || "");
+      if (prop.minimum !== undefined) input.min = prop.minimum;
+      if (prop.maximum !== undefined) input.max = prop.maximum;
+      group.appendChild(input);
+    } else {
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "form-input";
+      input.id = "field-" + key;
+      input.name = key;
+      input.value = value !== undefined ? value : (prop.default || "");
+      group.appendChild(input);
+    }
+
+    formFields.appendChild(group);
+  }
+
+  function renderArrayGroup(container, key, prop, items) {
+    const wrapper = document.createElement("div");
+    wrapper.id = "array-" + key;
+
+    items.forEach(function(item, index) {
+      wrapper.appendChild(createArrayItem(key, prop.items, item, index));
+    });
+
+    container.appendChild(wrapper);
+
+    const addBtn = document.createElement("button");
+    addBtn.type = "button";
+    addBtn.className = "btn btn-secondary btn-sm mt-md";
+    addBtn.textContent = "+ Add";
+    addBtn.addEventListener("click", function() {
+      const currentItems = wrapper.querySelectorAll(".array-group");
+      const newIndex = currentItems.length;
+      wrapper.appendChild(createArrayItem(key, prop.items, {}, newIndex));
+    });
+    container.appendChild(addBtn);
+  }
+
+  function createArrayItem(key, itemSchema, item, index) {
+    const group = document.createElement("div");
+    group.className = "array-group";
+
+    const header = document.createElement("div");
+    header.className = "array-group-header";
+    const title = document.createElement("strong");
+    title.textContent = "#" + (index + 1);
+    header.appendChild(title);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn btn-danger btn-sm";
+    removeBtn.textContent = "Remove";
+    removeBtn.addEventListener("click", function() {
+      group.remove();
+    });
+    header.appendChild(removeBtn);
+    group.appendChild(header);
+
+    const props = itemSchema.properties || {};
+    Object.keys(props).forEach(function(subKey) {
+      const subProp = props[subKey];
+      const subGroup = document.createElement("div");
+      subGroup.className = "form-group";
+
+      const subLabel = document.createElement("label");
+      subLabel.className = "form-label";
+      subLabel.textContent = subProp.description || subKey;
+      subGroup.appendChild(subLabel);
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "form-input";
+      input.name = key + "." + index + "." + subKey;
+      input.value = item[subKey] || "";
+      subGroup.appendChild(input);
+      group.appendChild(subGroup);
+    });
+
+    return group;
+  }
+
+  // Render all fields from schema
+  const properties = schema.properties || {};
+  Object.keys(properties).forEach(function(key) {
+    renderField(key, properties[key], values[key]);
+  });
+
+  // Form submission
+  document.getElementById("settings-form").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const statusEl = document.getElementById("status-message");
+    statusEl.className = "status-message";
+    statusEl.textContent = "";
+
+    const data = {};
+    const props = schema.properties || {};
+
+    Object.keys(props).forEach(function(key) {
+      const prop = props[key];
+
+      if (prop.type === "array" && prop.items && prop.items.type === "object") {
+        const arrayItems = [];
+        const groups = document.querySelectorAll("#array-" + key + " .array-group");
+        groups.forEach(function(group) {
+          const obj = {};
+          const subProps = prop.items.properties || {};
+          Object.keys(subProps).forEach(function(subKey) {
+            const input = group.querySelector("[name^='" + key + ".'][name$='." + subKey + "']");
+            if (input) obj[subKey] = input.value;
+          });
+          arrayItems.push(obj);
+        });
+        data[key] = arrayItems;
+      } else if (prop.type === "boolean") {
+        const input = document.getElementById("field-" + key);
+        data[key] = input ? input.checked : false;
+      } else if (prop.type === "integer") {
+        const input = document.getElementById("field-" + key);
+        data[key] = input ? parseInt(input.value, 10) : prop.default;
+      } else {
+        const input = document.getElementById("field-" + key);
+        data[key] = input ? input.value : "";
+      }
+    });
+
+    fetch("/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+      .then(function(resp) { return resp.json(); })
+      .then(function(result) {
+        if (result.status === "ok") {
+          statusEl.className = "status-message success";
+          statusEl.textContent = "Settings saved successfully.";
+        } else {
+          statusEl.className = "status-message error";
+          statusEl.textContent = "Error: " + (result.message || "Unknown error");
+        }
+      })
+      .catch(function(err) {
+        statusEl.className = "status-message error";
+        statusEl.textContent = "Network error: " + err.message;
+      });
+  });
+</script>
+{% endblock %}
