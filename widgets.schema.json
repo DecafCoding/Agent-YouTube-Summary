@@ -10,7 +10,7 @@
       "id": "new_since_last_visit",
       "label": "New Summaries",
       "type": "count",
-      "query": "SELECT COUNT(*) FROM agent_youtube_summary_summaries WHERE summarized_at > :last_visit"
+      "query": "SELECT COUNT(*) FROM agent_youtube_summary_summaries WHERE summarized_at > datetime('now', '-1 day')"
     },
     {
       "id": "last_run",

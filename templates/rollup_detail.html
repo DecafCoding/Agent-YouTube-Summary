@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Rollup {{ date }} — YouTube Summary{% endblock %}
+
+{% block content %}
+<p class="mb-lg"><a href="/rollups">&larr; Back to rollups</a></p>
+
+{% if content %}
+<h1>Rollup — {{ date }}</h1>
+<pre class="markdown-content">{{ content }}</pre>
+{% else %}
+<div class="empty-state">
+  <p>Rollup not found for {{ date }}.</p>
+  <p class="text-muted">This date may not have a generated rollup yet.</p>
+</div>
+{% endif %}
+{% endblock %}
