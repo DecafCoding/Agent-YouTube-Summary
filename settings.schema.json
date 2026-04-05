@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "channels": {
+      "type": "array",
+      "title": "Channels",
+      "description": "YouTube channels to monitor for new videos.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "description": "YouTube channel ID (e.g. UCxxxxxx)."
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name for this channel."
+          }
+        },
+        "required": ["channelId", "name"]
+      }
+    },
+    "schedule": {
+      "type": "string",
+      "title": "Collection Schedule",
+      "description": "Cron expression for how often Stage 1 runs.",
+      "default": "0 */1 * * *"
+    },
+    "channelCooldownDays": {
+      "type": "integer",
+      "title": "Channel Cooldown (Days)",
+      "description": "Minimum days between checks for the same channel.",
+      "default": 3,
+      "minimum": 1
+    },
+    "maxVideosPerChannel": {
+      "type": "integer",
+      "title": "Max Videos Per Channel",
+      "description": "Number of most recent videos to fetch per channel check.",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 25
+    },
+    "maxTranscriptDurationMinutes": {
+      "type": "integer",
+      "title": "Max Transcript Duration (Minutes)",
+      "description": "Skip transcript fetch for videos longer than this.",
+      "default": 60,
+      "minimum": 5
+    },
+    "summaryModel": {
+      "type": "string",
+      "title": "Summary Model",
+      "description": "LLM model to use for Stage 2 summarization.",
+      "default": "gpt-4o-mini"
+    }
+  },
+  "required": ["channels"]
+}
