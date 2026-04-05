@@ -1,0 +1,7 @@
+{
+  "id": "agent-youtube-summary",
+  "name": "YouTube Summary",
+  "category": "Agent",
+  "icon": "youtube",
+  "route": "/agent-youtube-summary"
+}

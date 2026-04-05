@@ -1,0 +1,11 @@
+{
+  "channels": [
+    { "channelId": "UCYO_jab_esuFRV4b17AJtAw", "name": "3Blue1Brown" },
+    { "channelId": "UCsBjURrPoezykLs9EqgamOA", "name": "Fireship" }
+  ],
+  "schedule": "0 */1 * * *",
+  "channelCooldownDays": 3,
+  "maxVideosPerChannel": 5,
+  "maxTranscriptDurationMinutes": 60,
+  "summaryModel": "gpt-4o-mini"
+}
