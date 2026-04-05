@@ -27,7 +27,7 @@ A three-stage pipeline (collect → summarize → rollup) triggered by cron. Sta
 **Feature Type**: New Capability
 **Estimated Complexity**: High
 **Primary Systems Affected**: Agent-YouTube-Summary (new), Utils-YouTube (dependency, no changes)
-**Dependencies**: utils-youtube, anthropic SDK, aiosqlite, python-dotenv, pydantic
+**Dependencies**: utils-youtube, openai SDK, aiosqlite, python-dotenv, pydantic
 
 ---
 
@@ -54,7 +54,7 @@ A three-stage pipeline (collect → summarize → rollup) triggered by cron. Sta
 ```
 Agent-YouTube-Summary/
 ├── pyproject.toml                     # Package config, dependencies, ruff, pytest
-├── .env.example                       # Documented env vars (YOUTUBE_API_KEY, APIFY_API_KEY, ANTHROPIC_API_KEY, DB_PATH)
+├── .env.example                       # Documented env vars (YOUTUBE_API_KEY, APIFY_API_KEY, OPENAI_API_KEY, DB_PATH)
 ├── .gitignore                         # Already exists — may need updates for data/, .env
 ├── prompts/
 │   └── summarize_video.md             # LLM prompt template with {{variables}}
@@ -65,7 +65,7 @@ Agent-YouTube-Summary/
 ├── src/
 │   └── agent_youtube_summary/
 │       ├── __init__.py                # Package docstring and public exports
-│       ├── config.py                  # Env var loading (DB_PATH, ANTHROPIC_API_KEY)
+│       ├── config.py                  # Env var loading (DB_PATH, OPENAI_API_KEY)
 │       ├── db.py                      # SQLite table creation, upserts, queries
 │       ├── settings.py                # Load and validate settings.json
 │       ├── stage_collect.py           # Stage 1 pipeline entry point
@@ -85,9 +85,9 @@ Agent-YouTube-Summary/
 
 ### Relevant Documentation — READ BEFORE IMPLEMENTING
 
-- Anthropic Python SDK: https://docs.anthropic.com/en/api/client-sdks
-  - Specific section: Async client, messages API, JSON mode
-  - Why: Stage 2 uses `anthropic.AsyncAnthropic().messages.create()` for summarization
+- OpenAI Python SDK: https://platform.openai.com/docs/api-reference/chat/create
+  - Specific section: Async client, chat completions, JSON mode / response_format
+  - Why: Stage 2 uses `openai.AsyncOpenAI().chat.completions.create()` for summarization
 - aiosqlite: https://aiosqlite.omnilib.dev/en/stable/
   - Specific section: Connection management, async context managers
   - Why: All DB operations must be async per CLAUDE.md conventions
@@ -101,7 +101,7 @@ Agent-YouTube-Summary/
 - Modules: `snake_case` (e.g., `stage_collect.py`, `stage_summarize.py`)
 - Classes: `PascalCase` (e.g., `SummarySettings`, `ChannelState`)
 - Functions: `snake_case` (e.g., `sync_channels`, `get_next_channel`)
-- Constants: `UPPER_SNAKE_CASE` (e.g., `DB_PATH`, `ANTHROPIC_API_KEY`)
+- Constants: `UPPER_SNAKE_CASE` (e.g., `DB_PATH`, `OPENAI_API_KEY`)
 - Private: Leading underscore (e.g., `_ensure_tables`)
 
 **Config Pattern** (mirror `Utils-YouTube/src/utils_youtube/config.py`):
@@ -112,7 +112,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DB_PATH: str = os.environ.get("DB_PATH", "../../data/artimesone.db")
-ANTHROPIC_API_KEY: str = os.environ.get("ANTHROPIC_API_KEY", "")
+OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
 ```
 
 **Logging Pattern** (from CLAUDE.md):
@@ -131,7 +131,7 @@ logger = logging.getLogger(__name__)
 **Async I/O Pattern** (from CLAUDE.md):
 - All I/O functions are `async`
 - Use `aiosqlite` for database, not synchronous sqlite3
-- Use `anthropic.AsyncAnthropic` for LLM calls
+- Use `openai.AsyncOpenAI` for LLM calls
 - Use `asyncio.gather()` where operations are independent
 
 **Test Pattern** (mirror `Utils-YouTube/tests/`):
@@ -155,21 +155,21 @@ Set up the project structure, dependencies, and configuration layer. This is the
 - **CREATE**: `pyproject.toml` with:
   - Package name: `agent-youtube-summary`
   - Python: `>=3.12`
-  - Dependencies: `utils-youtube` (path dependency: `{path = "../Utils-YouTube", editable = true}`), `anthropic>=0.43,<1.0`, `aiosqlite>=0.20,<1.0`, `python-dotenv>=1.0,<2.0`, `pydantic>=2.0,<3.0`
+  - Dependencies: `utils-youtube` (path dependency: `{path = "../Utils-YouTube", editable = true}`), `openai>=1.60,<2.0`, `aiosqlite>=0.20,<1.0`, `python-dotenv>=1.0,<2.0`, `pydantic>=2.0,<3.0`
   - Dev dependencies: `pytest>=8.0`, `pytest-asyncio>=0.25`, `ruff`
   - Build system: hatchling (mirror Utils-YouTube)
   - `[tool.hatch.build.targets.wheel] packages = ["src/agent_youtube_summary"]`
   - Ruff config: `line-length = 88`, `target-version = "py312"`, `select = ["E", "F", "I", "W"]`, `quote-style = "double"`
   - Pytest: `asyncio_mode = "auto"`
 - **CREATE**: `src/agent_youtube_summary/__init__.py` — Package docstring only
-- **CREATE**: `src/agent_youtube_summary/config.py` — Load `DB_PATH`, `ANTHROPIC_API_KEY` from env
+- **CREATE**: `src/agent_youtube_summary/config.py` — Load `DB_PATH`, `OPENAI_API_KEY` from env
   - **PATTERN**: Mirror `Utils-YouTube/src/utils_youtube/config.py`
   - `DB_PATH` default: `../../data/artimesone.db`
-  - `ANTHROPIC_API_KEY` default: empty string
+  - `OPENAI_API_KEY` default: empty string
   - `ROLLUP_OUTPUT_DIR` default: `../../data/agent-youtube-summary`
   - `SETTINGS_PATH` default: `settings.json` (resolved relative to project root)
   - `PROMPTS_DIR` default: `prompts/` (resolved relative to project root)
-- **CREATE**: `.env.example` documenting all env vars
+- **CREATE**: `.env.example` documenting all env vars (YOUTUBE_API_KEY, APIFY_API_KEY, OPENAI_API_KEY, DB_PATH)
 - **CREATE**: `tests/__init__.py` — Empty
 - **CREATE**: `tests/conftest.py` — Placeholder with basic fixtures
 - **VALIDATE**: `cd Agent-YouTube-Summary && uv sync && uv run python -c "import agent_youtube_summary; print('OK')"`
@@ -178,8 +178,8 @@ Set up the project structure, dependencies, and configuration layer. This is the
 
 Implement the settings layer — the JSON schema for Dashboard rendering and the Python loader that validates `settings.json` at runtime.
 
-- **CREATE**: `settings.schema.json` — Copy exact schema from PRD (channels array, schedule, channelCooldownDays, maxVideosPerChannel, maxTranscriptDurationMinutes, summaryModel)
-- **CREATE**: `settings.json` — Default values with two example channels (3Blue1Brown, Fireship) as specified in PRD
+- **CREATE**: `settings.schema.json` — Copy schema structure from PRD (channels array, schedule, channelCooldownDays, maxVideosPerChannel, maxTranscriptDurationMinutes, summaryModel). **OVERRIDE**: Change `summaryModel` default from the PRD's Claude model to `"gpt-4o-mini"` (OpenAI).
+- **CREATE**: `settings.json` — Default values with two example channels (3Blue1Brown, Fireship) as specified in PRD. Set `summaryModel` to `"gpt-4o-mini"`.
 - **CREATE**: `src/agent_youtube_summary/settings.py`:
   - Define `ChannelConfig` Pydantic model: `channel_id: str`, `name: str`
   - Define `SummarySettings` Pydantic model with all settings fields and defaults matching schema
@@ -272,16 +272,20 @@ Implement the LLM-powered summarization stage.
   - `_MAX_TRANSCRIPT_CHARS = 100_000` — Truncation limit for transcript before sending to LLM. Full transcript is preserved in DB.
   - `async def _load_prompt_template() -> str` — Read `prompts/summarize_video.md` from `PROMPTS_DIR`. Cache in module-level variable after first read.
   - `async def _render_prompt(template: str, title: str, channel_name: str, description: str, transcript: str) -> str` — Replace `{{title}}`, `{{channel_name}}`, `{{description}}`, `{{transcript}}` in template. Truncate transcript to `_MAX_TRANSCRIPT_CHARS` before injection.
-  - `async def _call_llm(prompt: str, model: str) -> dict | None` — Call Anthropic messages API:
+  - `async def _call_llm(prompt: str, model: str) -> dict | None` — Call OpenAI chat completions API:
     ```python
-    client = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
-    response = await client.messages.create(
+    client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
+    response = await client.chat.completions.create(
         model=model,
         max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant that summarizes YouTube videos. Always respond with valid JSON."},
+            {"role": "user", "content": prompt},
+        ],
     )
     ```
-    Parse response text as JSON. Return dict with keys `summary`, `topics`, `key_points`. Return None if parsing fails.
+    Parse `response.choices[0].message.content` as JSON. Return dict with keys `summary`, `topics`, `key_points`. Return None if parsing fails.
   - `async def run_summarize(settings: SummarySettings) -> int` — Returns count of videos summarized. Full flow:
     1. Open DB connection
     2. Load prompt template
@@ -292,11 +296,11 @@ Implement the LLM-powered summarization stage.
        c. On success: insert summary, update item status → 'summarized'
        d. On failure: update item status → 'failed', log error
     5. Return count of successfully summarized videos
-  - **IMPORTS**: `anthropic`, `json`, `logging`
-  - **GOTCHA**: LLM response may not be valid JSON. Wrap `json.loads()` in try/except. If parsing fails, mark as `'failed'`.
-  - **GOTCHA**: The Anthropic SDK response is `response.content[0].text` — it's a list of content blocks.
+  - **IMPORTS**: `openai`, `json`, `logging`
+  - **GOTCHA**: LLM response may not be valid JSON even with `response_format={"type": "json_object"}`. Wrap `json.loads()` in try/except. If parsing fails, mark as `'failed'`.
+  - **GOTCHA**: The OpenAI SDK response is `response.choices[0].message.content` — a string. Parse it with `json.loads()`.
   - **GOTCHA**: `topics` and `key_points` from LLM response are lists. Store as `json.dumps(list)` in the DB.
-- **CREATE**: `tests/test_stage_summarize.py` — Mock the Anthropic client. Test: happy path produces correct summary record, invalid JSON marks as failed, empty collected items returns 0, prompt template loading.
+- **CREATE**: `tests/test_stage_summarize.py` — Mock the OpenAI client. Test: happy path produces correct summary record, invalid JSON marks as failed, empty collected items returns 0, prompt template loading.
 - **VALIDATE**: `uv run pytest tests/test_stage_summarize.py -v`
 
 ### Task 7: Rollup Generator
@@ -382,8 +386,8 @@ Add robustness for all edge cases identified in the PRD.
   - Handle `fetch_video_details` returning empty list
   - Handle `fetch_transcripts` returning empty dict
 - **UPDATE**: `src/agent_youtube_summary/stage_summarize.py`:
-  - Handle LLM timeout (wrap in try/except for `anthropic.APITimeoutError`)
-  - Handle rate limit errors (`anthropic.RateLimitError`) — log and mark as failed
+  - Handle LLM timeout (wrap in try/except for `openai.APITimeoutError`)
+  - Handle rate limit errors (`openai.RateLimitError`) — log and mark as failed
   - Handle malformed JSON responses
 - **UPDATE**: `src/agent_youtube_summary/rollup.py`:
   - Handle items with missing optional fields (no thumbnail, no view_count)
@@ -410,7 +414,7 @@ Ensure all code passes quality checks and the full test suite.
 Each module gets its own test file. All external I/O is mocked:
 - **Database**: Use `aiosqlite` with `:memory:` database for isolated, fast tests
 - **utils-youtube calls**: Mock at the function level using `monkeypatch` or `unittest.mock.AsyncMock`
-- **Anthropic SDK**: Mock the `AsyncAnthropic` client and its `messages.create` method
+- **OpenAI SDK**: Mock the `AsyncOpenAI` client and its `chat.completions.create` method
 - **File I/O**: Use `tmp_path` fixture for rollup output and prompt template reading
 
 ### Integration Tests
@@ -589,5 +593,5 @@ cd Agent-YouTube-Summary && uv run python -m agent_youtube_summary.pipeline
 - **camelCase in JSON, snake_case in Python**: The `settings.schema.json` and `settings.json` use camelCase (standard for JSON Schema). The Python settings model should use Pydantic aliases to bridge the naming gap.
 - **No automatic retry**: The PRD explicitly states failed summarizations require manual reset. Do not implement automatic retry logic.
 - **One channel per run**: The PRD explicitly states each pipeline invocation processes one channel. Do not process multiple channels.
-- **Anthropic SDK**: Use `anthropic.AsyncAnthropic` for async LLM calls. The default model is `claude-haiku-4-5-20251001` from settings.
+- **OpenAI SDK**: Use `openai.AsyncOpenAI` for async LLM calls. The default model should be an OpenAI model (e.g., `gpt-4o-mini`) from settings. Use `response_format={"type": "json_object"}` to encourage valid JSON output.
 - **File paths**: The agent will be run from its own directory (`Agent-YouTube-Summary/`). Config paths like `DB_PATH`, `SETTINGS_PATH`, and `PROMPTS_DIR` should be resolved relative to the project root or use absolute paths from env vars.
