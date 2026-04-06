@@ -1,6 +1,7 @@
 {
   "channels": [
-    { "channelId": "UCYO_jab_esuFRV4b17AJtAw", "name": "3Blue1Brown" },
+    { "channelId": "UCz21u_dPpYlJ-XyLcyxutow", "name": "Jinni_Doo" },
+    { "channelId": "UCI-NW3Jr5_fnwyHiRf2xFLA", "name": "TheSmugglersRoom" },
     { "channelId": "UCsBjURrPoezykLs9EqgamOA", "name": "Fireship" }
   ],
   "schedule": "0 */1 * * *",
