@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "YouTube channel monitoring agent with per-video summarization and daily rollups for the ArtimesOne platform."
 requires-python = ">=3.12"
 dependencies = [
+    "utils-artimesone @ {root:uri}/../Utils-ArtimesOne",
     "utils-youtube @ {root:uri}/../Utils-YouTube",
     "openai>=1.60,<2.0",
     "aiosqlite>=0.20,<1.0",
