@@ -35,7 +35,7 @@ Agent-YouTube-Summary/
 │   ├── rollup.py                          # Stage 3 — markdown rollup generator
 │   ├── pipeline.py                        # Top-level pipeline orchestrator
 │   ├── app.py                             # FastAPI web application
-│   ├── discovery.py                       # Workspace scanner for sidebar
+│   ├── discovery.py                       # Re-exports discover_agents from utils-artimesone
 │   └── routes/
 │       ├── settings_page.py               # GET/POST /settings
 │       └── rollups.py                     # GET /rollups, /rollups/{date}
@@ -44,16 +44,20 @@ Agent-YouTube-Summary/
 
 ## Dependencies
 
-This agent depends on [utils-youtube](https://github.com/DecafCoding/Utils-YouTube), a shared async library that handles all YouTube Data API and Apify interactions. Stage 1 imports directly from it for video discovery, metadata retrieval, and transcript extraction — keeping that infrastructure in one place so multiple agents (this one and [agent-youtube-research](https://github.com/DecafCoding/Agent-YouTube-Research)) share the same code.
+This agent depends on two shared libraries:
 
-`utils-youtube` is declared as a path dependency in `pyproject.toml` and expects both repos to live side-by-side in the same workspace:
+- [utils-youtube](https://github.com/DecafCoding/Utils-YouTube) — Async library for YouTube Data API and Apify transcript interactions. Stage 1 imports directly from it for video discovery, metadata retrieval, and transcript extraction.
+- [utils-artimesone](https://github.com/DecafCoding/Utils-ArtimesOne) — Shared platform utilities for workspace discovery, settings I/O, and database connectivity. Provides `discover_agents()` used by the sidebar.
+
+Both are declared as path dependencies in `pyproject.toml` and expect all repos to live side-by-side in the same workspace:
 
 ```
 AI Agents/
 ├── shared/                    # Shared CSS and Jinja2 base template
 ├── data/                      # Shared SQLite database and markdown outputs
 ├── Agent-YouTube-Summary/
-└── Utils-YouTube/
+├── Utils-YouTube/
+└── Utils-ArtimesOne/
 ```
 
 ## Setup
