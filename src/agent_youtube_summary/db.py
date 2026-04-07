@@ -11,6 +11,7 @@ import logging
 from datetime import UTC, datetime, timedelta
 
 import aiosqlite
+from utils_artimesone import connect_db
 
 from agent_youtube_summary.config import DB_PATH
 from agent_youtube_summary.settings import ChannelConfig
@@ -20,10 +21,7 @@ logger = logging.getLogger(__name__)
 
 async def get_connection() -> aiosqlite.Connection:
     """Open a connection to the shared SQLite database with WAL mode enabled."""
-    conn = await aiosqlite.connect(DB_PATH)
-    await conn.execute("PRAGMA journal_mode=WAL")
-    conn.row_factory = aiosqlite.Row
-    return conn
+    return await connect_db(DB_PATH)
 
 
 async def ensure_tables(conn: aiosqlite.Connection) -> None:
